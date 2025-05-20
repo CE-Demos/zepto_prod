@@ -32,8 +32,8 @@ LOCATION = "us-central1"
 IMAGEN3_MODEL_NAME = "imagen-3.0-capability-001" 
 VEO2_MODEL_NAME = "veo-2.0-generate-exp"
 VEO2_API_ENDPOINT_ID = "https://us-central1-aiplatform.googleapis.com/v1/projects/veo-testing/locations/us-central1/publishers/google/models/veo-2.0-generate-exp:predictLongRunning" 
-VEO2_INTERPOLATION_PROMPT = "Make the model WALK towards the camera and TURN AROUND to show the kurta from different angles"
-VEO2_EXTENSION_PROMPT = "Continue the video, making the model turn around and look back at the camera."
+VEO2_INTERPOLATION_PROMPT = "Make the model WALK towards the camera and show the garments from different angles."
+VEO2_EXTENSION_PROMPT = "Continue the video, making the model turn around and look back at the camera. Keep the model face same."
 VEO2_EXTENSION_DURATION_SECONDS = 5 
 
 
@@ -773,7 +773,7 @@ def process_images_and_generate_videos_pipeline(
                     status_messages.append(f"  Speed altered for final video: {final_speed_altered_video_filename}")
                     # 6. Upload Final Video to GCS
                     status_messages.append(f"\nStep 6: Uploading final video to GCS...")
-                    gcs_final_video_blob_name = f"final_videos/{final_speed_altered_video_filename}"
+                    gcs_final_video_blob_name = f"final_videos/"
                     if upload_to_gcs(GCS_BUCKET_NAME, final_local_path_for_gradio, gcs_final_video_blob_name):
                         final_concatenated_video_gcs_uri = f"gs://{GCS_BUCKET_NAME}/{gcs_final_video_blob_name}"
                         status_messages.append(f"  Successfully uploaded final video to: {final_concatenated_video_gcs_uri}")
@@ -788,12 +788,14 @@ def process_images_and_generate_videos_pipeline(
             os.makedirs(gradio_output_storage_dir, exist_ok=True)
             
             # Use the same filename as on GCS for the local copy
-            local_display_video_filename = os.path.basename(gcs_final_video_blob_name)
+            local_display_video_filename = os.path.basename(final_speed_altered_video_filename)
             local_display_video_path = os.path.join(gradio_output_storage_dir, local_display_video_filename)
 
+            final_gcs_blob = f"{gcs_final_video_blob_name}{final_speed_altered_video_filename}"
+
             try:
-                status_messages.append(f"  Downloading final video from GCS for UI display: gs://{GCS_BUCKET_NAME}/{gcs_final_video_blob_name} to {local_display_video_path}")
-                download_blob(GCS_BUCKET_NAME, gcs_final_video_blob_name, local_display_video_path)
+                status_messages.append(f"  Downloading final video from GCS for UI display: gs://{GCS_BUCKET_NAME}/{gcs_final_video_blob_name}/{final_speed_altered_video_filename} to {local_display_video_path}")
+                download_blob(GCS_BUCKET_NAME, final_gcs_blob, local_display_video_path)
                 final_video_for_display = local_display_video_path
                 status_messages.append(f"  Successfully downloaded video for UI display to: {final_video_for_display}")
             except Exception as e_download_display:

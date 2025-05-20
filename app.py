@@ -45,6 +45,8 @@ def gradio_interface_handler(
     processed_gcs_uris_str = "\n".join(processed_gcs_uris) if processed_gcs_uris else "No images processed or uploaded to GCS."
     main_video_output = generated_final_video_paths
 
+    
+
     return status_log, processed_gcs_uris_str, main_video_output
 
 
