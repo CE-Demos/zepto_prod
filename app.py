@@ -184,4 +184,4 @@ if __name__ == "__main__":
     # print(f"The hardcoded prompt in video_gen.py for Imagen background alteration is: '{HARDCODED_IMAGEN_BG_PROMPT}' (from video_gen.py).")
     print("Ensure GOOGLE_APPLICATION_CREDENTIALS environment variable is set for GCS and Vertex AI access.")
     print("Required libraries: gradio, google-cloud-storage, Pillow, rembg, google-cloud-aiplatform")
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    demo.launch(server_name="0.0.0.0", server_port=8080)

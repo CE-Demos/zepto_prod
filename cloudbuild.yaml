@@ -33,6 +33,10 @@ steps:
       - '--platform=managed'
       - '--allow-unauthenticated' # Makes the service publicly accessible. Change if auth needed.
       - '--quiet' # Suppresses interactive prompts
+      - '--timeout=3000'
+      - '--cpu=1'
+      - '--memory=2Gi'
+
       # Add more Cloud Run deployment flags as needed:
       # - '--memory=2Gi'
       # - '--cpu=1'

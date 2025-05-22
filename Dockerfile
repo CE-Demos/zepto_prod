@@ -33,7 +33,7 @@ COPY video_gen.py .
 
 # 6. Make port 7860 available to the world outside this container
 # Gradio typically runs on port 7860 by default
-EXPOSE 7860
+EXPOSE 8080
 
 # 7. Define environment variables (optional, but good practice for configuration)
 # These can be overridden at runtime (e.g., by Cloud Run)
