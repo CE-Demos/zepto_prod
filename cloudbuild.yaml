@@ -1,0 +1,59 @@
+# cloudbuild.yaml
+steps:
+  # 1. Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_ARTIFACT_REGISTRY_PATH}/${_IMAGE_NAME}:$COMMIT_SHA'
+      - '-t' # Add a 'latest' tag as well for convenience (optional)
+      - '${_ARTIFACT_REGISTRY_PATH}/${_IMAGE_NAME}:latest'
+      - '.' # Dockerfile location
+    id: 'Build Image'
+
+  # 2. Push the Docker image to Artifact Registry (tagged with commit SHA)
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_ARTIFACT_REGISTRY_PATH}/${_IMAGE_NAME}:$COMMIT_SHA']
+    id: 'Push Image SHA'
+
+  # 3. Push the 'latest' tagged image (optional)
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_ARTIFACT_REGISTRY_PATH}/${_IMAGE_NAME}:latest']
+    id: 'Push Image Latest'
+
+  # 4. Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_CLOUD_RUN_SERVICE_NAME}' # Your Cloud Run service name
+      - '--image=${_ARTIFACT_REGISTRY_PATH}/${_IMAGE_NAME}:$COMMIT_SHA'
+      - '--region=${_CLOUD_RUN_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated' # Makes the service publicly accessible. Change if auth needed.
+      - '--quiet' # Suppresses interactive prompts
+      # Add more Cloud Run deployment flags as needed:
+      # - '--memory=2Gi'
+      # - '--cpu=1'
+      # - '--timeout=900' # Max timeout for Cloud Run service (e.g., 15 minutes)
+      # - '--concurrency=80'
+      # - '--service-account=YOUR_RUNTIME_SERVICE_ACCOUNT_EMAIL'
+      # - '--set-env-vars=GCS_BUCKET_NAME=your-bucket,VERTEX_AI_PROJECT_ID=your-project-id'
+    id: 'Deploy to Cloud Run'
+
+# Store the image in Artifact Registry
+images:
+  - '${_ARTIFACT_REGISTRY_PATH}/${_IMAGE_NAME}:$COMMIT_SHA'
+  - '${_ARTIFACT_REGISTRY_PATH}/${_IMAGE_NAME}:latest'
+
+# Define substitutions (variables)
+substitutions:
+  _ARTIFACT_REGISTRY_PATH: 'us-central1-docker.pkg.dev/veo-testing/zepeto-veo-testing' # e.g., us-central1-docker.pkg.dev/my-gcp-project/gradio-video-app-repo
+  _IMAGE_NAME: 'zepto-video-gen' # Or your preferred image name
+  _CLOUD_RUN_SERVICE_NAME: 'zepto-video-pipeline' # Choose a name for your Cloud Run service
+  _CLOUD_RUN_REGION: ' us-central1' # e.g., us-central1 (should be a region that supports your needs)
+
+  options:
+    logging: CLOUD_LOGGING_ONLY
+  # machineType: 'E2_HIGHCPU_8' # Optional: Choose a machine type for faster builds if needed
