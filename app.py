@@ -126,7 +126,7 @@ if not os.path.exists(gradio_video_serve_dir):
 # )
 
 with gr.Blocks(theme=gr.themes.Soft()) as demo:
-    gr.Markdown("# AI Product Video Generation Pipeline")
+    gr.Markdown("# Zepto Product Video Generation Pipeline")
     gr.Markdown(initial_description)
 
     with gr.Row():
