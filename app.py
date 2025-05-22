@@ -74,7 +74,7 @@ if not os.path.exists("temp_processing_space"):
     os.makedirs("temp_processing_space")
 
 startup_warnings = []
-if vg_project_id == "veo-testing":
+if not vg_project_id == "veo-testing":
     startup_warnings.append("WARNING: 'PROJECT_ID' in video_gen.py is not set. Imagen alteration of background image will be SIMULATED by copying.")
 
 initial_description = (
@@ -126,7 +126,7 @@ if not os.path.exists(gradio_video_serve_dir):
 # )
 
 with gr.Blocks(theme=gr.themes.Soft()) as demo:
-    gr.Markdown("# Zepto Product Video Generation Pipeline")
+    gr.Markdown("# Zepto Product Video Generation")
     gr.Markdown(initial_description)
 
     with gr.Row():
