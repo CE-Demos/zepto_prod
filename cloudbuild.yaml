@@ -54,6 +54,6 @@ substitutions:
   _CLOUD_RUN_SERVICE_NAME: 'zepto-video-pipeline' # Choose a name for your Cloud Run service
   _CLOUD_RUN_REGION: ' us-central1' # e.g., us-central1 (should be a region that supports your needs)
 
-  options:
-    logging: CLOUD_LOGGING_ONLY
+options:
+  logging: 'CLOUD_LOGGING_ONLY'
   # machineType: 'E2_HIGHCPU_8' # Optional: Choose a machine type for faster builds if needed

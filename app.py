@@ -157,8 +157,6 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             
             video_display_output = gr.Video(
                 label="Final Generated Video",
-                # Ensure this component can handle the type of file path returned
-                # (e.g., .mp4 for actual video, .txt for our dummy simulation)
                 # Gradio will offer download for .txt if it can't render.
                 # For actual video, provide a path to an .mp4 or similar.
                 # format="mp4", # You can suggest a format if you know it
