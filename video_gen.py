@@ -32,8 +32,10 @@ LOCATION = "us-central1"
 IMAGEN3_MODEL_NAME = "imagen-3.0-capability-001" 
 VEO2_MODEL_NAME = "veo-2.0-generate-exp"
 VEO2_API_ENDPOINT_ID = "https://us-central1-aiplatform.googleapis.com/v1/projects/veo-testing/locations/us-central1/publishers/google/models/veo-2.0-generate-exp:predictLongRunning" 
-VEO2_INTERPOLATION_PROMPT = "Make the model WALK towards the camera and show the garments from different angles."
-VEO2_EXTENSION_PROMPT = "Continue the video, making the model turn around and look back at the camera. Keep the model face same."
+# VEO2_INTERPOLATION_PROMPT = "Make the model WALK towards the camera and show the garments from different angles."
+#VEO2_INTERPOLATION_PROMPT = "A video with smooth transition from the first frame to the last frame."
+VEO2_INTERPOLATION_PROMPT = "A realistic transition, showcasing the apparel with the confident, professional walk of a brand ambassador, optimized for e-commerce product presentation"
+VEO2_EXTENSION_PROMPT = "Continue the video with seamless motions."
 VEO2_EXTENSION_DURATION_SECONDS = 5 
 
 
@@ -151,143 +153,143 @@ def upload_final_video_to_gcs(bucket_name, source_path, destination_blob_name):
     except Exception as e: print(f"Error uploading {source_path} to {destination_blob_name}: {e}"); return False
 
 
-def generate_signed_url(bucket_name: str, blob_name: str, expiration_seconds: int = 3600) -> str | None:
-    """Generates a signed URL for a GCS blob."""
-    try:
-        storage_client = storage.Client(project=PROJECT_ID if PROJECT_ID != "veo-testing" else None)
-        bucket = storage_client.bucket(bucket_name)
-        blob = bucket.blob(blob_name)
+# def generate_signed_url(bucket_name: str, blob_name: str, expiration_seconds: int = 3600) -> str | None:
+#     """Generates a signed URL for a GCS blob."""
+#     try:
+#         storage_client = storage.Client(project=PROJECT_ID if PROJECT_ID != "veo-testing" else None)
+#         bucket = storage_client.bucket(bucket_name)
+#         blob = bucket.blob(blob_name)
 
-        # Generate the signed URL
-        # Note: This requires credentials with the 'storage.objects.get' permission
-        # and potentially 'iam.serviceAccounts.signBlob' if using a service account
-        # without direct key file access (e.g., default VM service account).
-        signed_url = blob.generate_signed_url(
-            expiration=timedelta(seconds=expiration_seconds),
-            method='GET'
-        )
-        print(f"Generated signed URL for gs://{bucket_name}/{blob_name}")
-        return signed_url
-    except Exception as e:
-        print(f"Error generating signed URL for gs://{bucket_name}/{blob_name}: {e}")
-        return None
+#         # Generate the signed URL
+#         # Note: This requires credentials with the 'storage.objects.get' permission
+#         # and potentially 'iam.serviceAccounts.signBlob' if using a service account
+#         # without direct key file access (e.g., default VM service account).
+#         signed_url = blob.generate_signed_url(
+#             expiration=timedelta(seconds=expiration_seconds),
+#             method='GET'
+#         )
+#         print(f"Generated signed URL for gs://{bucket_name}/{blob_name}")
+#         return signed_url
+#     except Exception as e:
+#         print(f"Error generating signed URL for gs://{bucket_name}/{blob_name}: {e}")
+#         return None
 
 
-def imagen3_replace_background(product_image_path: str, background_image_path: str, output_image_path: str) -> bytes | None:
+# def imagen3_replace_background(product_image_path: str, background_image_path: str, output_image_path: str) -> bytes | None:
    
-    """
-    Placeholder for Imagen3 API call to replace the background of a product image
-    with a new background image. This is an IMAGE EDITING or COMPOSITING task.
+#     """
+#     Placeholder for Imagen3 API call to replace the background of a product image
+#     with a new background image. This is an IMAGE EDITING or COMPOSITING task.
 
-    Args:
-        product_image_bytes: Bytes of the product image (foreground).
-        background_image_bytes: Bytes of the new background image.
-        project_id: Your Google Cloud Project ID.
-        location: The GCP region where your Imagen model/endpoint is.
-    Returns:
-        Bytes of the product image with the new background, or None if failed.
-    """
-    print(f"INFO: Calling Imagen3 (model for image editing/compositing) "
-        f"to replace background for images.")
+#     Args:
+#         product_image_bytes: Bytes of the product image (foreground).
+#         background_image_bytes: Bytes of the new background image.
+#         project_id: Your Google Cloud Project ID.
+#         location: The GCP region where your Imagen model/endpoint is.
+#     Returns:
+#         Bytes of the product image with the new background, or None if failed.
+#     """
+#     print(f"INFO: Calling Imagen3 (model for image editing/compositing) "
+#         f"to replace background for images.")
 
-    try:
-        with open(product_image_path, "rb") as f:
-            product_image_bytes_content = f.read()
-        with open(background_image_path, "rb") as f:
-            background_image_bytes_content = f.read()
-    except Exception as e:
-        print(f"  ERROR: Failed to read local image files to bytes: {e}")
-        return None
+#     try:
+#         with open(product_image_path, "rb") as f:
+#             product_image_bytes_content = f.read()
+#         with open(background_image_path, "rb") as f:
+#             background_image_bytes_content = f.read()
+#     except Exception as e:
+#         print(f"  ERROR: Failed to read local image files to bytes: {e}")
+#         return None
        
     
-    try:
-        client = genai.Client(api_key='AIzaSyCwtqZvVOiEx86-ZY1Xssn1sw6sikVLia0')
+#     try:
+#         client = genai.Client(api_key='AIzaSyCwtqZvVOiEx86-ZY1Xssn1sw6sikVLia0')
 
-        from vertexai.preview.vision_models import (
-            Image,
-            ImageGenerationModel,
-            ControlReferenceImage,
-            StyleReferenceImage,
-            SubjectReferenceImage,
-            RawReferenceImage,
-        )
+#         from vertexai.preview.vision_models import (
+#             Image,
+#             ImageGenerationModel,
+#             ControlReferenceImage,
+#             StyleReferenceImage,
+#             SubjectReferenceImage,
+#             RawReferenceImage,
+#         )
 
-        generation_model = ImageGenerationModel.from_pretrained("imagen-3.0-capability-001")
+#         generation_model = ImageGenerationModel.from_pretrained("imagen-3.0-capability-001")
 
-        reference_images = [
-            SubjectReferenceImage(
-                reference_id=1,
-                image=product_image_bytes_content,  
-                subject_type="SUBJECT_TYPE_PERSON",
-            ),  
-            SubjectReferenceImage(
-                reference_id=2,
-                image=background_image_bytes_content,  
-                subject_description="",        
-                subject_type="SUBJECT_TYPE_DEFAULT",
-            ),  
-        ]
+#         reference_images = [
+#             SubjectReferenceImage(
+#                 reference_id=1,
+#                 image=product_image_bytes_content,  
+#                 subject_type="SUBJECT_TYPE_PERSON",
+#             ),  
+#             SubjectReferenceImage(
+#                 reference_id=2,
+#                 image=background_image_bytes_content,  
+#                 subject_description="",        
+#                 subject_type="SUBJECT_TYPE_DEFAULT",
+#             ),  
+#         ]
 
-        response = generation_model._generate_images(
-            prompt="Add image [2] as background for image [1].",
-            number_of_images=1,
-            negative_prompt="",
-            aspect_ratio="9:16",
-            person_generation="allow_adult",
-            safety_filter_level="block_few",
-            reference_images=reference_images,
-        )
+#         response = generation_model._generate_images(
+#             prompt="Add image [2] as background for image [1].",
+#             number_of_images=1,
+#             negative_prompt="",
+#             aspect_ratio="9:16",
+#             person_generation="allow_adult",
+#             safety_filter_level="block_few",
+#             reference_images=reference_images,
+#         )
 
-        if not response: # 
-            print("ERROR: Imagen3 API returned an empty response.")
-            return None
+#         if not response: # 
+#             print("ERROR: Imagen3 API returned an empty response.")
+#             return None
         
-        generated_image_object = response[0]
-        processed_image_bytes_result = None
-        if hasattr(generated_image_object, 'image_bytes'):
-                processed_image_bytes_result = generated_image_object.image_bytes
-        elif hasattr(generated_image_object, '_image_bytes'):
-                processed_image_bytes_result = generated_image_object._image_bytes
+#         generated_image_object = response[0]
+#         processed_image_bytes_result = None
+#         if hasattr(generated_image_object, 'image_bytes'):
+#                 processed_image_bytes_result = generated_image_object.image_bytes
+#         elif hasattr(generated_image_object, '_image_bytes'):
+#                 processed_image_bytes_result = generated_image_object._image_bytes
 
-        if processed_image_bytes_result:
-                print(f"  INFO: Successfully extracted {len(processed_image_bytes_result)} bytes from Imagen 3 response.")
-                # **CRUCIAL STEP: Save the bytes to the output file**
-                with open(output_image_path, "wb") as f_out:
-                    f_out.write(processed_image_bytes_result)
-                print(f"  Imagen 3 processed image saved locally to {output_image_path}")
-                return output_image_path # **Return the string path**
-        else:
-                print(f"  ERROR: Could not find image bytes attribute on the Imagen 3 response object.")
-                # Attempt fallback simulation if bytes not found in response
-                return run_imagen3_fallback_simulation(product_image_path, background_image_path, output_image_path, "No image bytes in API response")
+#         if processed_image_bytes_result:
+#                 print(f"  INFO: Successfully extracted {len(processed_image_bytes_result)} bytes from Imagen 3 response.")
+#                 # **CRUCIAL STEP: Save the bytes to the output file**
+#                 with open(output_image_path, "wb") as f_out:
+#                     f_out.write(processed_image_bytes_result)
+#                 print(f"  Imagen 3 processed image saved locally to {output_image_path}")
+#                 return output_image_path # **Return the string path**
+#         else:
+#                 print(f"  ERROR: Could not find image bytes attribute on the Imagen 3 response object.")
+#                 # Attempt fallback simulation if bytes not found in response
+#                 return run_imagen3_fallback_simulation(product_image_path, background_image_path, output_image_path, "No image bytes in API response")
 
-    except Exception as e:
-            print(f"  ERROR: Imagen 3 API call for background replacement failed: {e}")
-            # Attempt fallback simulation on any API call error
-            return run_imagen3_fallback_simulation(product_image_path, background_image_path, output_image_path, f"API call exception: {e}")
+#     except Exception as e:
+#             print(f"  ERROR: Imagen 3 API call for background replacement failed: {e}")
+#             # Attempt fallback simulation on any API call error
+#             return run_imagen3_fallback_simulation(product_image_path, background_image_path, output_image_path, f"API call exception: {e}")
 
 
-def run_imagen3_fallback_simulation(product_image_path, background_image_path, output_image_path, reason=""):
-    """Helper function for the rembg+PIL fallback simulation."""
-    print(f"  Executing rembg+PIL fallback simulation for Imagen 3. Reason: {reason}")
-    try:
-        with open(product_image_path, 'rb') as i_file: product_image_bytes_content = i_file.read()
-        with open(background_image_path, 'rb') as f: background_image_bytes_content = f.read()
+# def run_imagen3_fallback_simulation(product_image_path, background_image_path, output_image_path, reason=""):
+#     """Helper function for the rembg+PIL fallback simulation."""
+#     print(f"  Executing rembg+PIL fallback simulation for Imagen 3. Reason: {reason}")
+#     try:
+#         with open(product_image_path, 'rb') as i_file: product_image_bytes_content = i_file.read()
+#         with open(background_image_path, 'rb') as f: background_image_bytes_content = f.read()
         
-        prod_fg_bytes = remove(product_image_bytes_content)
-        product_foreground_rgba = Image.open(io.BytesIO(prod_fg_bytes)).convert("RGBA")
-        background_img_rgba = Image.open(io.BytesIO(background_image_bytes_content)).convert("RGBA")
+#         prod_fg_bytes = remove(product_image_bytes_content)
+#         product_foreground_rgba = Image.open(io.BytesIO(prod_fg_bytes)).convert("RGBA")
+#         background_img_rgba = Image.open(io.BytesIO(background_image_bytes_content)).convert("RGBA")
         
-        if background_img_rgba.size != product_foreground_rgba.size:
-            background_img_rgba = background_img_rgba.resize(product_foreground_rgba.size, Image.LANCZOS)
+#         if background_img_rgba.size != product_foreground_rgba.size:
+#             background_img_rgba = background_img_rgba.resize(product_foreground_rgba.size, Image.LANCZOS)
         
-        final_image = Image.alpha_composite(background_img_rgba, product_foreground_rgba)
-        final_image.save(output_image_path)
-        print(f"  SIMULATED (rembg+PIL) Imagen 3 output saved to {output_image_path}")
-        return output_image_path
-    except Exception as e_sim:
-        print(f"  ERROR: rembg+PIL simulation failed: {e_sim}")
-        return None
+#         final_image = Image.alpha_composite(background_img_rgba, product_foreground_rgba)
+#         final_image.save(output_image_path)
+#         print(f"  SIMULATED (rembg+PIL) Imagen 3 output saved to {output_image_path}")
+#         return output_image_path
+#     except Exception as e_sim:
+#         print(f"  ERROR: rembg+PIL simulation failed: {e_sim}")
+#         return None
 
 def interpolate_video_veo2(
     start_image_path: str,
@@ -632,7 +634,7 @@ def concatenate_videos(video_paths_list: list, output_concatenated_video_path: s
 # --- Main Pipeline Function ---
 def process_images_and_generate_videos_pipeline(
     product_images_temp_paths,
-    user_background_image_temp_path: str,
+   # user_background_image_temp_path: str,
     playback_speed: float = 1.0
 ):
     run_id = str(uuid.uuid4())
@@ -646,10 +648,10 @@ def process_images_and_generate_videos_pipeline(
     try: # Wrap main processing in a try block
         dir_paths = {
             "original_products": os.path.join(run_temp_dir, "0_original_products"),
-            "user_background": os.path.join(run_temp_dir, "1_user_background"),
-            "bg_added_products": os.path.join(run_temp_dir, "2_bg_added_products"),
-            "interpolated_videos_local_dummies": os.path.join(run_temp_dir, "3_interpolated_videos_local"),
-            "extended_videos_local_dummies": os.path.join(run_temp_dir, "4_extended_videos_local"),
+            # "user_background": os.path.join(run_temp_dir, "1_user_background"),
+            # "bg_added_products": os.path.join(run_temp_dir, "2_bg_added_products"),
+            "interpolated_videos_local": os.path.join(run_temp_dir, "3_interpolated_videos_local"),
+            "extended_videos_local": os.path.join(run_temp_dir, "4_extended_videos_local"),
             "concatenated_video_temp": os.path.join(run_temp_dir, "5_concatenated_video_temp"),
             "final_output": os.path.join(run_temp_dir, "6_final_output")
         }
@@ -658,10 +660,10 @@ def process_images_and_generate_videos_pipeline(
         status_messages.append(f"Temporary directories created under {run_temp_dir}")
 
         # 1. Prepare Inputs
-        bg_input_filename = os.path.basename(user_background_image_temp_path)
-        local_user_bg_path = os.path.join(dir_paths["user_background"], bg_input_filename)
-        shutil.copy(user_background_image_temp_path, local_user_bg_path)
-        status_messages.append(f"User background image '{bg_input_filename}' copied locally.")
+        # bg_input_filename = os.path.basename(user_background_image_temp_path)
+        # local_user_bg_path = os.path.join(dir_paths["user_background"], bg_input_filename)
+        # shutil.copy(user_background_image_temp_path, local_user_bg_path)
+        # status_messages.append(f"User background image '{bg_input_filename}' copied locally.")
         
         local_product_image_paths = {}
         for temp_file_obj in product_images_temp_paths:
@@ -670,35 +672,36 @@ def process_images_and_generate_videos_pipeline(
             shutil.copy(src_path, dst_path); local_product_image_paths[filename] = dst_path
         status_messages.append(f"Copied {len(local_product_image_paths)} product images locally.")
 
-        # 2. Replace Background (Imagen 3)
-        bg_added_image_paths = {} 
-        status_messages.append(f"\nStep 2: Replacing background for product images (Imagen 3 - Model: {IMAGEN3_MODEL_NAME})...")
-        if not PROJECT_ID or PROJECT_ID == "veo-testing":
-            status_messages.append("  WARNING: Imagen 3 SDK not fully available or project not set. Using rembg+PIL simulation.")
+        # # 2. Replace Background (Imagen 3)
+        # bg_added_image_paths = {} 
+        # status_messages.append(f"\nStep 2: Replacing background for product images (Imagen 3 - Model: {IMAGEN3_MODEL_NAME})...")
+        # if not PROJECT_ID or PROJECT_ID == "veo-testing":
+        #     status_messages.append("  WARNING: Imagen 3 SDK not fully available or project not set. Using rembg+PIL simulation.")
 
-        for original_filename, product_local_path in local_product_image_paths.items():
-            base, ext = os.path.splitext(original_filename); bg_added_filename = f"{base}_bg_added.png" 
-            output_bg_added_local_path = os.path.join(dir_paths["bg_added_products"], bg_added_filename)
-            processed_path = imagen3_replace_background(
-                product_image_path=product_local_path,
-                background_image_path=local_user_bg_path, 
-                output_image_path=output_bg_added_local_path
-            ) # model_name uses default
-            if processed_path and os.path.exists(processed_path):
-                bg_added_image_paths[original_filename] = processed_path
-                status_messages.append(f"  BG replaced for {original_filename} -> {os.path.basename(processed_path)}")
-            else:
-                status_messages.append(f"  Failed to replace BG for {original_filename}.")
+        # for original_filename, product_local_path in local_product_image_paths.items():
+        #     base, ext = os.path.splitext(original_filename); bg_added_filename = f"{base}_bg_added.png" 
+        #     output_bg_added_local_path = os.path.join(dir_paths["bg_added_products"], bg_added_filename)
+        #     processed_path = imagen3_replace_background(
+        #         product_image_path=product_local_path,
+        #         background_image_path=local_user_bg_path, 
+        #         output_image_path=output_bg_added_local_path
+        #     ) # model_name uses default
+        #     if processed_path and os.path.exists(processed_path):
+        #         bg_added_image_paths[original_filename] = processed_path
+        #         status_messages.append(f"  BG replaced for {original_filename} -> {os.path.basename(processed_path)}")
+        #     else:
+        #         status_messages.append(f"  Failed to replace BG for {original_filename}.")
         
         # 3. Pair Slates and Process Each Pair
         product_slates = {}
-        for original_filename, bg_added_path in bg_added_image_paths.items():
+        status_messages.append(f"\nStep 2: Pairing product slates for video processing...")
+        for original_filename, product_local_path in local_product_image_paths.items():
             if "_first_slate" in original_filename: key = original_filename.split("_first_slate")[0]
             elif "_last_slate" in original_filename: key = original_filename.split("_last_slate")[0]
             else: continue
             if key not in product_slates: product_slates[key] = {}
-            if "_first_slate" in original_filename: product_slates[key]['first'] = bg_added_path
-            elif "_last_slate" in original_filename: product_slates[key]['last'] = bg_added_path
+            if "_first_slate" in original_filename: product_slates[key]['first'] = product_local_path
+            elif "_last_slate" in original_filename: product_slates[key]['last'] = product_local_path
         
         status_messages.append(f"\nFound {len(product_slates)} potential product pairs for video processing.")
         all_extended_video_uris_for_concat = []
@@ -720,7 +723,7 @@ def process_images_and_generate_videos_pipeline(
                 # )
                 
                 interpolated_video_filename = f"{product_base_name}_interpolated"
-                interpolated_local_video_path = os.path.join(dir_paths["interpolated_videos_local_dummies"], interpolated_video_filename)
+                interpolated_local_video_path = os.path.join(dir_paths["interpolated_videos_local"], interpolated_video_filename)
                 status_messages.append(f"  Step 3a: Interpolating video (Veo 2 API Call)...")
                 interpolated_video_gcs_uri = interpolate_video_veo2(
                     first_slate_path_local, last_slate_path_local,
@@ -734,7 +737,7 @@ def process_images_and_generate_videos_pipeline(
 
 
                 extended_video_local_filename = f"{product_base_name}_extended"
-                extended_video_local_path = os.path.join(dir_paths["extended_videos_local_dummies"], extended_video_local_filename)
+                extended_video_local_path = os.path.join(dir_paths["extended_videos_local"], extended_video_local_filename)
                 status_messages.append(f"  Step 3b: Extending video (Veo 2 Simulation from local)...")
                 extended_video_gcs_uri = extend_video_veo2(
                     interpolated_video_gcs_uri, VEO2_EXTENSION_PROMPT, extended_video_local_path
@@ -797,14 +800,15 @@ def process_images_and_generate_videos_pipeline(
                 status_messages.append(f"  Downloading final video from GCS for UI display: gs://{GCS_BUCKET_NAME}/{gcs_final_video_blob_name}/{final_speed_altered_video_filename} to {local_display_video_path}")
                 download_blob(GCS_BUCKET_NAME, final_gcs_blob, local_display_video_path)
                 final_video_for_display = local_display_video_path
+                gradio_video_path = f"/home/parulsahoo/CE-GitHub/zepto_prod/{final_video_for_display}"
                 status_messages.append(f"  Successfully downloaded video for UI display to: {final_video_for_display}")
             except Exception as e_download_display:
                 status_messages.append(f"  ERROR: Failed to download final video from GCS for UI display: {e_download_display}")
-                final_video_for_display = None # Ensure it's None if download fails
+                final_video_for_display = local_display_video_path # Ensure it's None if download fails
 
 
         status_messages.append(f"\nPipeline finished successfully for Run ID: {run_id}.")
-        return "\n".join(status_messages), [], final_video_for_display
+        return "\n".join(status_messages), final_video_for_display
 
     except Exception as e:
         status_messages.append(f"\nERROR: An unexpected error occurred in the pipeline: {e}")
@@ -812,7 +816,7 @@ def process_images_and_generate_videos_pipeline(
         # import traceback
         # status_messages.append(f"Traceback: {traceback.format_exc()}")
         print(f"ERROR in pipeline (run_id: {run_id}): {e}") # Print to console as well
-        return "\n".join(status_messages), [], None # Return None for GCS URI and local path on error
+        return "\n".join(status_messages), final_video_for_display # Return None for GCS URI and local path on error
     
     finally:
         # Cleanup: Delete the run-specific temporary directory

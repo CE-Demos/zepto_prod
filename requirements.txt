@@ -1,0 +1,36 @@
+# For the Gradio web interface
+gradio
+
+# For Google Cloud Storage, Vertex AI (Imagen, Veo LROs), and Authentication
+google-cloud-storage
+google-cloud-aiplatform
+google-auth
+
+# For making HTTP requests (used in Veo API calls)
+requests
+
+# For image processing (direct use and by rembg)
+Pillow
+
+# For background removal
+rembg
+onnxruntime # Critical runtime dependency for rembg
+
+# For video editing
+moviepy==1.0.3
+
+# For UUID generation (standard library, but good to be aware of usage)
+# uuid 
+
+# # For JSON handling (standard library)
+# # json
+
+# # For OS path operations and temp file management (standard library)
+# os 
+# shutil 
+
+# # For base64 encoding (standard library)
+# base64 
+
+# # For time delays (standard library)
+# time 
