@@ -52,7 +52,7 @@ substitutions:
   _ARTIFACT_REGISTRY_PATH: 'us-central1-docker.pkg.dev/veo-testing/zepeto-veo-testing' # e.g., us-central1-docker.pkg.dev/my-gcp-project/gradio-video-app-repo
   _IMAGE_NAME: 'zepto-video-gen' # Or your preferred image name
   _CLOUD_RUN_SERVICE_NAME: 'zepto-video-pipeline' # Choose a name for your Cloud Run service
-  _CLOUD_RUN_REGION: ' us-central1' # e.g., us-central1 (should be a region that supports your needs)
+  _CLOUD_RUN_REGION: 'us-central1' # e.g., us-central1 (should be a region that supports your needs)
 
 options:
   logging: 'CLOUD_LOGGING_ONLY'
