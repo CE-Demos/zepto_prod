@@ -34,7 +34,8 @@ VEO2_MODEL_NAME = "veo-2.0-generate-exp"
 VEO2_API_ENDPOINT_ID = "https://us-central1-aiplatform.googleapis.com/v1/projects/veo-testing/locations/us-central1/publishers/google/models/veo-2.0-generate-exp:predictLongRunning" 
 # VEO2_INTERPOLATION_PROMPT = "Make the model WALK towards the camera and show the garments from different angles."
 #VEO2_INTERPOLATION_PROMPT = "A video with smooth transition from the first frame to the last frame."
-VEO2_INTERPOLATION_PROMPT = "A realistic transition, showcasing the apparel with the confident, professional walk of a brand ambassador, optimized for e-commerce product presentation"
+# VEO2_INTERPOLATION_PROMPT = "A realistic transition, showcasing the apparel with the confident, professional walk of a brand ambassador, optimized for e-commerce product presentation"
+VEO2_INTERPOLATION_PROMPT = "[Camera: Medium wide shot, slowly dollying in towards the model to emphasize presence][Lighting: Slightly more dramatic, emphasizing shadows and highlights for depth][Style: Majestic, confident, aspirational] Brand ambassador walking to showcase e-commerce product in e-commerce website catalog. Don't change the product style."
 VEO2_EXTENSION_PROMPT = "Continue the video with seamless motions."
 VEO2_EXTENSION_DURATION_SECONDS = 5 
 
