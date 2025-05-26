@@ -36,6 +36,7 @@ steps:
       - '--timeout=3000'
       - '--cpu=1'
       - '--memory=2Gi'
+      - '--set-env-vars=GCS_BUCKET_NAME=veo_exps_prod,PROJECT_ID=veo-testing'
 
       # Add more Cloud Run deployment flags as needed:
       # - '--memory=2Gi'

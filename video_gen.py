@@ -331,13 +331,33 @@ def interpolate_video_veo2(
     new_url = f"https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/veo-2.0-generate-exp:fetchPredictOperation"
     api_call_attempted = True
 
+    # Determine MIME type for start_image
+    start_image_ext = os.path.splitext(start_image_path)[1].lower()
+    if start_image_ext == ".png":
+        start_mime_type = "image/png"
+    elif start_image_ext in [".jpg", ".jpeg"]:
+        start_mime_type = "image/jpeg"
+    else:
+        print(f"  ERROR: Unsupported file extension for start image: {start_image_ext}")
+        return None
+    
+    # Determine MIME type for end_image
+    end_image_ext = os.path.splitext(end_image_path)[1].lower()
+    if end_image_ext == ".png":
+        end_mime_type = "image/png"
+    elif end_image_ext in [".jpg", ".jpeg"]:
+        end_mime_type = "image/jpeg"
+    else:
+        print(f"  ERROR: Unsupported file extension for end image: {end_image_ext}")
+        return None
+
     
     
     request_body = {
         "instances": [{
             "prompt": prompt_text,
-            "image": {"bytesBase64Encoded": start_frame_base64, "mimeType": "image/png"}, # Using 'content' for base64
-            "lastFrame": {"bytesBase64Encoded": end_frame_base64, "mimeType": "image/png"} # Using 'content'
+            "image": {"bytesBase64Encoded": start_frame_base64, "mimeType": start_mime_type}, # Using 'content' for base64
+            "lastFrame": {"bytesBase64Encoded": end_frame_base64, "mimeType": end_mime_type} # Using 'content'
         }],
         "parameters": {
             "aspectRatio": "9:16",
@@ -735,19 +755,21 @@ def process_images_and_generate_videos_pipeline(
                     status_messages.append(f"  Veo 2 interpolation API call FAILED for {product_base_name}.")
                     continue
                 status_messages.append(f"  Veo 2 interpolated video GCS URI: {interpolated_video_gcs_uri}")
+                all_extended_video_uris_for_concat.append(interpolated_video_gcs_uri)
+                
 
 
-                extended_video_local_filename = f"{product_base_name}_extended"
-                extended_video_local_path = os.path.join(dir_paths["extended_videos_local"], extended_video_local_filename)
-                status_messages.append(f"  Step 3b: Extending video (Veo 2 Simulation from local)...")
-                extended_video_gcs_uri = extend_video_veo2(
-                    interpolated_video_gcs_uri, VEO2_EXTENSION_PROMPT, extended_video_local_path
-                )
-                if extended_video_gcs_uri:
-                    all_extended_video_uris_for_concat.append(extended_video_gcs_uri)
-                    status_messages.append(f"  Extended video (local dummy) for {product_base_name} ready.")
-                else: status_messages.append(f"  Extension (local dummy creation) failed.")
-            else: status_messages.append(f"  Skipping {product_base_name}: Missing slate pair.")
+            #     extended_video_local_filename = f"{product_base_name}_extended"
+            #     extended_video_local_path = os.path.join(dir_paths["extended_videos_local"], extended_video_local_filename)
+            #     status_messages.append(f"  Step 3b: Extending video (Veo 2 Simulation from local)...")
+            #     extended_video_gcs_uri = extend_video_veo2(
+            #         interpolated_video_gcs_uri, VEO2_EXTENSION_PROMPT, extended_video_local_path
+            #     )
+            #     if extended_video_gcs_uri:
+            #         all_extended_video_uris_for_concat.append(extended_video_gcs_uri)
+            #         status_messages.append(f"  Extended video (local dummy) for {product_base_name} ready.")
+            #     else: status_messages.append(f"  Extension (local dummy creation) failed.")
+            # else: status_messages.append(f"  Skipping {product_base_name}: Missing slate pair.")
 
         # 4. Concatenate All Extended Videos
         if all_extended_video_uris_for_concat:
