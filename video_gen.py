@@ -21,6 +21,7 @@ from moviepy.editor import VideoFileClip, concatenate_videoclips, vfx
 from PIL import Image, ImageOps
 from rembg import remove
 import io
+from collections import OrderedDict
 
 # --- Google Cloud Configuration ---
 GCS_BUCKET_NAME = "veo_exps_prod"  
@@ -34,8 +35,10 @@ VEO2_MODEL_NAME = "veo-2.0-generate-exp"
 VEO2_API_ENDPOINT_ID = "https://us-central1-aiplatform.googleapis.com/v1/projects/veo-testing/locations/us-central1/publishers/google/models/veo-2.0-generate-exp:predictLongRunning" 
 # VEO2_INTERPOLATION_PROMPT = "Make the model WALK towards the camera and show the garments from different angles."
 #VEO2_INTERPOLATION_PROMPT = "A video with smooth transition from the first frame to the last frame."
-# VEO2_INTERPOLATION_PROMPT = "A realistic transition, showcasing the apparel with the confident, professional walk of a brand ambassador, optimized for e-commerce product presentation"
+# VEO2_INTERPOLATION_PROMPT = "A realistic transition, showcasing the apparel with the confident, professional walk of a brand ambassador, optnimized for e-commerce product presentation"
 VEO2_INTERPOLATION_PROMPT = "[Camera: Medium wide shot, slowly dollying in towards the model to emphasize presence][Lighting: Slightly more dramatic, emphasizing shadows and highlights for depth][Style: Majestic, confident, aspirational] Brand ambassador walking to showcase e-commerce product in e-commerce website catalog. Don't change the product style."
+# VEO2_INTERPOLATION_PROMPT = "Create an interpolated video showcasing an apparel product for an e-commerce catalog. Use the provided first and last slates of the product photo shoot. The video should feature a clean, professional, and high-quality aesthetic. Generate smooth and subtle rotations and zooms to showcase the garment's details, texture, and fit accurately. Ensure seamless transitions between different angles and views. Use a clean and neutral background to maintain focus on the apparel. The video should highlight the garment's design and features, presenting it in an appealing and informative way for potential customers. The interpolation should result in a fluid, continuous motion between the starting and ending poses, capturing the essence of the garment. The apparel product will vary (e.g., dresses, shirts, pants), so the generated motion should be appropriate for the specific garment type."
+INTERPOLATION_PROMPT = "Interpolate the two slates seamlessly"
 VEO2_EXTENSION_PROMPT = "Continue the video with seamless motions."
 VEO2_EXTENSION_DURATION_SECONDS = 5 
 
@@ -305,7 +308,8 @@ def interpolate_video_veo2(
     print(f"Performing Veo 2 Interpolation: from '{os.path.basename(start_image_path)}' "
           f"to '{os.path.basename(end_image_path)}'")
     
-    
+    generated_videos_uri = None
+
     try:
         with open(start_image_path, "rb") as f:
             start_frame_bytes = f.read()
@@ -656,6 +660,8 @@ def concatenate_videos(video_paths_list: list, output_concatenated_video_path: s
 def process_images_and_generate_videos_pipeline(
     product_images_temp_paths,
    # user_background_image_temp_path: str,
+    global_first_slate_temp_path: str | None, # New input
+    global_last_slate_temp_path: str | None,
     playback_speed: float = 1.0
 ):
     run_id = str(uuid.uuid4())
@@ -669,8 +675,8 @@ def process_images_and_generate_videos_pipeline(
     try: # Wrap main processing in a try block
         dir_paths = {
             "original_products": os.path.join(run_temp_dir, "0_original_products"),
-            # "user_background": os.path.join(run_temp_dir, "1_user_background"),
-            # "bg_added_products": os.path.join(run_temp_dir, "2_bg_added_products"),
+            "global_slates": os.path.join(run_temp_dir, "1_global_slates"),
+            "video_segments_local": os.path.join(run_temp_dir, "2_video_segments_local"),
             "interpolated_videos_local": os.path.join(run_temp_dir, "3_interpolated_videos_local"),
             "extended_videos_local": os.path.join(run_temp_dir, "4_extended_videos_local"),
             "concatenated_video_temp": os.path.join(run_temp_dir, "5_concatenated_video_temp"),
@@ -686,12 +692,26 @@ def process_images_and_generate_videos_pipeline(
         # shutil.copy(user_background_image_temp_path, local_user_bg_path)
         # status_messages.append(f"User background image '{bg_input_filename}' copied locally.")
         
-        local_product_image_paths = {}
+        local_product_image_paths_map = OrderedDict() # Use OrderedDict to maintain original order if needed
         for temp_file_obj in product_images_temp_paths:
             src_path = temp_file_obj.name; filename = os.path.basename(src_path)
             dst_path = os.path.join(dir_paths["original_products"], filename)
-            shutil.copy(src_path, dst_path); local_product_image_paths[filename] = dst_path
-        status_messages.append(f"Copied {len(local_product_image_paths)} product images locally.")
+            shutil.copy(src_path, dst_path); local_product_image_paths_map[filename] = dst_path
+        status_messages.append(f"Copied {len(local_product_image_paths_map)} product images locally.")
+
+        local_global_first_slate_path = None
+        if global_first_slate_temp_path:
+            fn = os.path.basename(global_first_slate_temp_path)
+            local_global_first_slate_path = os.path.join(dir_paths["global_slates"], f"{fn}")
+            shutil.copy(global_first_slate_temp_path, local_global_first_slate_path)
+            status_messages.append(f"Global first slate '{fn}' copied locally.")
+
+        local_global_last_slate_path = None
+        if global_last_slate_temp_path:
+            fn = os.path.basename(global_last_slate_temp_path)
+            local_global_last_slate_path = os.path.join(dir_paths["global_slates"], f"{fn}")
+            shutil.copy(global_last_slate_temp_path, local_global_last_slate_path)
+            status_messages.append(f"Global last slate '{fn}' copied locally.")
 
         # # 2. Replace Background (Imagen 3)
         # bg_added_image_paths = {} 
@@ -714,20 +734,53 @@ def process_images_and_generate_videos_pipeline(
         #         status_messages.append(f"  Failed to replace BG for {original_filename}.")
         
         # 3. Pair Slates and Process Each Pair
-        product_slates = {}
-        status_messages.append(f"\nStep 2: Pairing product slates for video processing...")
-        for original_filename, product_local_path in local_product_image_paths.items():
+        # product_slates = {}
+        # status_messages.append(f"\nStep 2: Pairing product slates for video processing...")
+        # for original_filename, product_local_path in local_product_image_paths_map.items():
+        #     if "_first_slate" in original_filename: key = original_filename.split("_first_slate")[0]
+        #     elif "_last_slate" in original_filename: key = original_filename.split("_last_slate")[0]
+        #     else: continue
+        #     if key not in product_slates: product_slates[key] = {}
+        #     if "_first_slate" in original_filename: product_slates[key]['first'] = product_local_path
+        #     elif "_last_slate" in original_filename: product_slates[key]['last'] = product_local_path
+        
+        #status_messages.append(f"\nFound {len(product_slates)} potential product pairs for video processing.")
+
+        sorted_product_slate_pairs = OrderedDict()
+        for original_filename, original_path in local_product_image_paths_map.items():
             if "_first_slate" in original_filename: key = original_filename.split("_first_slate")[0]
             elif "_last_slate" in original_filename: key = original_filename.split("_last_slate")[0]
             else: continue
-            if key not in product_slates: product_slates[key] = {}
-            if "_first_slate" in original_filename: product_slates[key]['first'] = product_local_path
-            elif "_last_slate" in original_filename: product_slates[key]['last'] = product_local_path
+            if key not in sorted_product_slate_pairs: sorted_product_slate_pairs[key] = {}
+            if "_first_slate" in original_filename: sorted_product_slate_pairs[key]['first'] = original_path
+            elif "_last_slate" in original_filename: sorted_product_slate_pairs[key]['last'] = original_path
         
-        status_messages.append(f"\nFound {len(product_slates)} potential product pairs for video processing.")
+        valid_product_slate_pairs = OrderedDict([(k,v) for k,v in sorted_product_slate_pairs.items() if 'first' in v and 'last' in v])
+        status_messages.append(f"\nFound {len(valid_product_slate_pairs)} valid product slate pairs (from original images) for video processing.")
+
         all_extended_video_uris_for_concat = []
 
-        for i, (product_base_name, slates) in enumerate(product_slates.items()):
+        # --- 3A. Generate Initial Clip (using original product slate) ---
+
+        if local_global_first_slate_path and valid_product_slate_pairs:
+            first_product_base_name = next(iter(valid_product_slate_pairs))
+            first_product_first_slate_path = valid_product_slate_pairs[first_product_base_name]['first']
+            intial_clip_filename = os.path.join(dir_paths["video_segments_local"], f"initial_clip_{first_product_base_name}.mp4")
+            status_messages.append(f"\nStep 3A: Generating Initial Clip (Global First Slate + First Product's Original First Slate)...")
+            initial_clip_path = interpolate_video_veo2(
+                local_global_first_slate_path,
+                first_product_first_slate_path, # Original slate
+                INTERPOLATION_PROMPT,
+                intial_clip_filename
+            )
+            if initial_clip_path: all_extended_video_uris_for_concat.append(initial_clip_path)
+            else: status_messages.append("  Failed to generate initial clip.")
+        elif local_global_first_slate_path:
+             status_messages.append("\nSkipping Initial Clip: No valid product slates to pair with global first slate.")
+
+         # --- 3B. Generate Product Segment Clips (using original product slates) ---
+
+        for i, (product_base_name, slates) in enumerate(valid_product_slate_pairs.items()):
             status_messages.append(f"\nProcessing product: {product_base_name} (Pair {i+1})")
             if 'first' in slates and 'last' in slates:
                 first_slate_path_local = slates['first']
@@ -756,6 +809,24 @@ def process_images_and_generate_videos_pipeline(
                     continue
                 status_messages.append(f"  Veo 2 interpolated video GCS URI: {interpolated_video_gcs_uri}")
                 all_extended_video_uris_for_concat.append(interpolated_video_gcs_uri)
+
+            # --- 3C. Generate Final Clip (using original product slate) ---
+
+        if local_global_last_slate_path and valid_product_slate_pairs:
+            last_product_base_name = next(reversed(valid_product_slate_pairs))
+            last_product_last_slate_path = valid_product_slate_pairs[last_product_base_name]['last']
+            final_clip_filename = os.path.join(dir_paths["video_segments_local"], f"final_clip_{last_product_base_name}.mp4")
+            status_messages.append(f"\nStep 3C: Generating Final Clip (Last Product's Original Last Slate + Global Last Slate)...")
+            final_clip_path = interpolate_video_veo2(
+                last_product_last_slate_path, # Original slate
+                local_global_last_slate_path,
+                INTERPOLATION_PROMPT,
+                final_clip_filename
+            )
+            if final_clip_path: all_extended_video_uris_for_concat.append(final_clip_path)
+            else: status_messages.append("  Failed to generate final clip.")
+        elif local_global_last_slate_path:
+            status_messages.append("\nSkipping Final Clip: No valid product slates to pair with global last slate.")
                 
 
 

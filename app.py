@@ -8,6 +8,8 @@ from video_gen import PROJECT_ID as vg_project_id # For startup warning
 def gradio_interface_handler(
     product_images_folder_list, # List of Gradio FileData objects
     #background_image_file,      # Gradio FileData object for background image
+    global_first_slate_file_obj, # New input
+    global_last_slate_file_obj,
     playback_speed: float
 ):
     # if not product_images_folder_list:
@@ -28,6 +30,21 @@ def gradio_interface_handler(
         prod_filename = file_data.name
         if not os.path.splitext(prod_filename)[1].lower() in allowed_extensions:
             return f"Error: All product images must be one of {', '.join(allowed_extensions)}. Found: {prod_filename}", [], None
+        
+    # Validate global slates (if provided)
+    global_first_slate_path = None
+    if global_first_slate_file_obj:
+        global_first_slate_path = global_first_slate_file_obj.name
+        if not os.path.splitext(global_first_slate_path)[1].lower() in allowed_extensions:
+            return f"ERROR: Global First Slate image must be one of {', '.join(allowed_extensions)}.", [], None
+            
+
+    global_last_slate_path = None
+    if global_last_slate_file_obj:
+        global_last_slate_path = global_last_slate_file_obj.name
+        if not os.path.splitext(global_last_slate_path)[1].lower() in allowed_extensions:
+            return f"ERROR: Global Last Slate image must be one of {', '.join(allowed_extensions)}.", [], None
+        
 
     if playback_speed <= 0:
         return "Error: Playback speed must be greater than 0.", [], None
@@ -39,6 +56,8 @@ def gradio_interface_handler(
         process_images_and_generate_videos_pipeline(
             product_image_temp_paths,
             # user_background_image_temp_path,
+            global_first_slate_path, # Pass path or None
+            global_last_slate_path,
             playback_speed
         )
 
@@ -78,10 +97,12 @@ if not vg_project_id == "veo-testing":
     startup_warnings.append("WARNING: 'PROJECT_ID' in video_gen.py is not set. Imagen alteration of background image will be SIMULATED by copying.")
 
 initial_description = (
-    "1. Upload product images (filenames with 'productName_first_slate' or 'productName_last_slate').\n"
+    "1. Upload product images (,png, ,jpg, ,jpeg giles with 'productName_first_slate' or 'productName_last_slate' as filenames).\n"
    # "2. Upload your desired background image file. This background will FIRST be altered by Imagen using a hardcoded prompt (see video_gen.py).\n"
-    "3. Set the playback speed for the generated videos (e.g., 1.0 for normal).\n"
-    "4. Click 'Submit'.\n"
+    "2. (Optional) Upload an Initial Slate image for the beginning of the final video.\n"
+    "3. (Optional) Upload a Final Slate image for the end of the final video.\n"
+    "4. Set the playback speed for the generated videos (e.g., 1 for normal).\n"
+    "5. Click 'Submit'.\n"
     "The system will: isolate product images, create first_slate end_slate pairs for product, "
     "simulate Veo 2 for interpolation, and simulate speed alteration."
 )
@@ -125,18 +146,30 @@ if not os.path.exists(gradio_video_serve_dir):
 #     allow_flagging="never",
 # )
 
-with gr.Blocks(theme=gr.themes.Soft()) as demo:
+with gr.Blocks(theme=gr.themes.Ocean()) as demo:
     gr.Markdown("# Zepto Apparel Videofication tool")
     gr.Markdown(initial_description)
 
     with gr.Row():
-        with gr.Column(scale=1):
+        with gr.Column(scale=1, variant="panel"):
             product_images_input = gr.File(
-                label="Upload Product Images (select multiple .png, .jpeg, .jpg)",
+                label="Upload Product Images (select multiple)",
                 file_count="multiple",
                 file_types=['.png', '.jpeg', '.jpg', 'image/png', 'image/jpeg']
             )
             
+            global_first_slate_input = gr.File(
+                label="Optional: Global Initial Slate Image",
+                type="filepath",
+                file_types=['.png', '.jpeg', '.jpg', 'image/png', 'image/jpeg']
+            )
+
+            global_last_slate_input = gr.File( # New Input
+                label="Optional: Global Final Slate Image",
+                type="filepath",
+                file_types=['.png', '.jpeg', '.jpg', 'image/png', 'image/jpeg']
+            )
+
             playback_speed_input = gr.Number(
                 label="Playback Speed Factor for Final Video",
                 value=1.0,
@@ -145,7 +178,8 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                 step=0.1,
                 info="e.g., 0.5 (slow), 1.0 (normal), 2.0 (fast)"
             )
-            generate_button = gr.Button("Generate All Videos", variant="primary")
+            
+            generate_button = gr.Button("Generate Video", variant="primary")
         
         with gr.Column(scale=2):
             status_log_output = gr.Textbox(
@@ -168,6 +202,8 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         fn=gradio_interface_handler,
         inputs=[
             product_images_input,
+            global_first_slate_input, # New
+            global_last_slate_input,
             playback_speed_input
         ],
         outputs=[
