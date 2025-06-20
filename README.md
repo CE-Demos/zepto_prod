@@ -28,8 +28,8 @@ The project included an automted piepline which generated videos for multiple ap
     + Artifact Registry API
 
 - Create a repository on Artifact Registry
-    + give it a suitable name and select the format `Docker`.
-    + leave the rest of the configurations as default and click create.
+    + Give it a suitable name and select the format `Docker`.
+    + Leave the rest of the configurations as default and click create.
 
 - Grant Cloud Build Permissions to Deploy on Cloud Run
 
